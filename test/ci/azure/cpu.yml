@@ -1,41 +1,7 @@
- resources:
-  repositories:
-  - repository: openvino_tensorflow
-    type: github
-    endpoint: openvinotoolkit
-    name: openvinotoolkit/openvino_tensorflow
-    
- pool:
-  name: 'Default'
-  
- variables:
-    WORK_DIR: $(Pipeline.Workspace)/openvino_tensorflow
-    BUILD_DIR: $(WORK_DIR)/build
-    OV_LOCATION: /opt/intel/openvino_2021.3.394/
+pool:
+  vmImage: 'ubuntu-18.04'
 
-jobs:
-- job: RunInContainer
-   pool:
-      vmImage: 'openvino_tensorflow/ubuntu18.04_base'
+container: ubuntu:18.04
 
-   container: openvino_tensorflow/ubuntu18.04_base
-   
-   steps:
-      - script: |
-         rm -rf $(WORK_DIR) ; mkdir $(WORK_DIR)
-         rm -rf $(BUILD_DIR) ; mkdir $(BUILD_DIR)
-      
-      - checkout: self
-         clean: true
-         lfs: false
-         path: openvino_tensorflow
-   
-      - script: |
-         export OPENVINO_TF_BACKEND=CPU
-         echo $(WORK_DIR)
-         git submodule init
-         git submodule update
-         python3 build_ovtf.py
-
-        workingDirectory: $(WORK_DIR) 
-        displayName: "Build"
+steps:
+- script: printenv
