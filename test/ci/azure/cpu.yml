@@ -12,33 +12,30 @@
     WORK_DIR: $(Pipeline.Workspace)/openvino_tensorflow
     BUILD_DIR: $(WORK_DIR)/build
     OV_LOCATION: /opt/intel/openvino_2021.3.394/
-    
- steps:
- 
-   - script: |
-      rm -rf $(WORK_DIR) ; mkdir $(WORK_DIR)
-      rm -rf $(BUILD_DIR) ; mkdir $(BUILD_DIR)
+
+jobs:
+- job: RunInContainer
+   pool:
+      vmImage: 'openvino_tensorflow/ubuntu18.04_base'
+
+   container: openvino_tensorflow/ubuntu18.04_base
    
-   - checkout: self
-     clean: true
-     lfs: false
-     path: openvino_tensorflow
- 
-   - script: |
-      export OPENVINO_TF_BACKEND=CPU
-      echo $(WORK_DIR)
-      git submodule init
-      git submodule update
-      docker build --rm --build-arg http_proxy=http://proxy-chain.intel.com:911 \
-      --build-arg https_proxy=http://proxy-chain.intel.com:912 \
-      --build-arg no_proxy=localhost,127.0.0.1,::1 \
-      --build-arg ftp_proxy=http://proxy-chain.intel.com:911 \
-      -t openvino_tensorflow/ubuntu18.04_base . \
-      -f tools/builds/Docker/docker_files/dockerfile.ubuntu18.04_base
-     workingDirectory: $(WORK_DIR) 
-     displayName: "Build"
-     
-   - script: |
-      rm -rf *
-     displayName: "Cleanup"   
-     workingDirectory: $(WORK_DIR)
+   steps:
+      - script: |
+         rm -rf $(WORK_DIR) ; mkdir $(WORK_DIR)
+         rm -rf $(BUILD_DIR) ; mkdir $(BUILD_DIR)
+      
+      - checkout: self
+         clean: true
+         lfs: false
+         path: openvino_tensorflow
+   
+      - script: |
+         export OPENVINO_TF_BACKEND=CPU
+         echo $(WORK_DIR)
+         git submodule init
+         git submodule update
+         python3 build_ovtf.py
+
+        workingDirectory: $(WORK_DIR) 
+        displayName: "Build"
