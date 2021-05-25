@@ -1,5 +1,5 @@
 pool:
-  vmImage: 'openvino_tensorflow/ubuntu18.04_base'
+  name: 'Default'
 
 container: openvino_tensorflow/ubuntu18.04_base
 
