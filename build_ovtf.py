@@ -416,9 +416,9 @@ def main():
         )
 
         if (arguments.openvino_version == "2021.3"):
-            openvino_branch = "releases/2021/3"
+            openvino_branch = "tensorflow_frontend"
         elif (arguments.openvino_version == "2021.2"):
-            openvino_branch = "releases/2021/2"
+            openvino_branch = "tensorflow_frontend"
 
         # Download OpenVINO
         download_repo(
