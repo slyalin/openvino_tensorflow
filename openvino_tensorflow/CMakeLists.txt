@@ -7,6 +7,7 @@ set(LIB_NAME openvino_tensorflow)
 include_directories(${TensorFlow_INCLUDE_DIR})
 include_directories(${TensorFlow_INCLUDE_DIR}/external/nsync/public)
 include_directories(${NGRAPH_INSTALL_DIR}/include)
+include_directories(${NGRAPH_INSTALL_DIR}/include/ngraph/frontend/generic)
 include_directories(${ABSL_INCLUDE_DIR})
 
 # For some reason the following is needed for ABI compatibility with TF.
@@ -59,6 +60,8 @@ target_link_libraries(
         ovtf_logger
         ${TensorFlow_FRAMEWORK_LIBRARY}
         ngraph_lib
+        tensorflow_frontend_lib
+        frontend_manager_lib
         absl_algorithm
         absl_container
         absl_strings

@@ -634,7 +634,7 @@ def build_openvino(build_dir, openvino_src_dir, cxx_abi, target_arch,
         "-DENABLE_V10_SERIALIZE=ON", "-DENABLE_TESTS=OFF",
         "-DENABLE_SAMPLES=OFF", "-DENABLE_FUNCTIONAL_TESTS=OFF",
         "-DENABLE_VPU=ON", "-DENABLE_GNA=OFF",
-        "-DNGRAPH_ONNX_IMPORT_ENABLE=OFF", "-DNGRAPH_TEST_UTIL_ENABLE=OFF",
+        "-DNGRAPH_ONNX_IMPORT_ENABLE=ON", "-DNGRAPH_TEST_UTIL_ENABLE=OFF",
         "-DNGRAPH_COMPONENT_PREFIX=deployment_tools/ngraph/",
         "-DNGRAPH_USE_CXX_ABI=" + cxx_abi,
         "-DCMAKE_CXX_FLAGS=-D_GLIBCXX_USE_CXX11_ABI=" + cxx_abi + " -march=" +

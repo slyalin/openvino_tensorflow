@@ -4,7 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  *******************************************************************************/
 
+#define OV_TF_FRONTEND 0
+
 #include <iomanip>
+#include <chrono>
 
 #include "absl/synchronization/mutex.h"
 #include "tensorflow/core/common_runtime/optimization_registry.h"
@@ -22,7 +25,13 @@
 #include "openvino_tensorflow/mark_for_clustering.h"
 #include "openvino_tensorflow/ovtf_utils.h"
 
+#if OV_TF_FRONTEND
+#include "ngraph/frontend/tensorflow/tensorflow_frontend/tensorflow.hpp"
+#include "tensorflow/core/graph/algorithm.h"
+#include <ie_core.hpp>
+#else
 #include "ocm/include/ocm_nodes_checker.h"
+#endif
 
 using namespace std;
 
@@ -110,6 +119,63 @@ class NGraphEncapsulationPass : public NGraphRewritePass {
     ov_version = "2021.3";
 #endif
 
+      using namespace std::chrono;
+      auto caps_start = high_resolution_clock::now();
+
+#if OV_TF_FRONTEND
+
+    // Phase 1: partially convert function with FE
+
+      std::shared_ptr<ngraph::Function> ng_function;
+      try {
+          std::cerr << "slyalin: FE as OCM: started frontend phase\n";
+          ngraph::frontend::FrontEndTensorflow frontend;
+
+          auto start = high_resolution_clock::now();
+#if 1
+          vector<Node*> sorted;
+          GetReversePostOrder(*options.graph->get(), &sorted, NodeComparatorName());
+          std::cout << "[ INFO ] Graph was sorted!\n";
+
+          vector<std::shared_ptr<NodeDef>> gd(sorted.size());
+          for(size_t i = 0; i < gd.size(); ++i)
+          {
+              // TODO: Use Node directly instead of NodeDef, because some attributes are not reliable according to
+              // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/graph/graph.h#L97
+              gd[i] = std::make_shared<NodeDef>(sorted[i]->def());
+          }
+#else
+          auto gd = std::make_shared<::tensorflow::GraphDef>();
+          options.graph->get()->ToGraphDef(gd.get());
+#endif
+
+          auto stop = high_resolution_clock::now();
+          auto duration = duration_cast<milliseconds>(stop - start);
+          cout << "ToGraphDef preparation took: " << duration.count() << " ms" << endl;
+          auto inputModelTensorflow = std::make_shared<ngraph::frontend::InputModelTensorflow>(gd);
+          ng_function = frontend.convert(inputModelTensorflow);
+          std::cerr << "ng_function->get_results().size()" << ng_function->get_results().size() << "\n";
+          std::cerr << "slyalin: FE as OCM: finished frontend phase\n";
+      }
+      catch(...)
+      {
+          std::cerr << "Excpetion thrown when converting TF graph def with frontend\n";
+      }
+
+    // TODO
+
+    InferenceEngine::Core core;
+    core.QueryNetwork(InferenceEngine::CNNNetwork(ng_function), device);
+
+
+    // TODO
+
+    // Phase 3: put data in the format compatible with the remaining code
+
+      std::vector<void*> nodes_list;
+
+#else
+
     ocm::Framework_Names fName = ocm::Framework_Names::TF;
     ocm::FrameworkNodesChecker FC(fName, device_id, ov_version,
                                   options.graph->get());
@@ -122,6 +188,11 @@ class NGraphEncapsulationPass : public NGraphRewritePass {
     }
     FC.SetDisabledOps(disabled_ops_set);
     std::vector<void*> nodes_list = FC.MarkSupportedNodes();
+#endif
+
+      auto caps_stop = high_resolution_clock::now();
+      auto duration = duration_cast<milliseconds>(caps_stop - caps_start);
+      cout << "OCM part took: " << duration.count() << " ms" << std::endl;
 
     // cast back the nodes in the TF format and mark the nodes for clustering
     // (moved out from MarkForClustering function)

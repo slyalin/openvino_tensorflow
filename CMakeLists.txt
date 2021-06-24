@@ -196,6 +196,20 @@ set_target_properties(
     ${NGRAPH_IMPORTED_LOCATION}
 )
 
+add_library(tensorflow_frontend_lib SHARED IMPORTED)
+set_target_properties(
+    tensorflow_frontend_lib
+    PROPERTIES IMPORTED_LOCATION
+    ${NGRAPH_INSTALL_DIR}/${LIB}/libtensorflow_frontend.so
+)
+
+add_library(frontend_manager_lib SHARED IMPORTED)
+set_target_properties(
+        frontend_manager_lib
+        PROPERTIES IMPORTED_LOCATION
+        ${NGRAPH_INSTALL_DIR}/${LIB}/libfrontend_manager.so
+)
+
 SET(BASEPATH "${CMAKE_SOURCE_DIR}")
 INCLUDE_DIRECTORIES("${BASEPATH}")
 

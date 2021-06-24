@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  *******************************************************************************/
 
+#include <chrono>
+
 #include "tensorflow/core/framework/tensor.pb.h"
 #include "tensorflow/core/framework/tensor_shape.pb.h"
 #include "tensorflow/core/graph/algorithm.h"
@@ -15,6 +17,7 @@
 #include "ngraph/pass/manager.hpp"
 #include "ngraph/pass/pass_config.hpp"
 #include "ngraph/slice_plan.hpp"
+#include "ngraph/frontend/tensorflow/tensorflow_frontend/tensorflow.hpp"
 
 #include "api.h"
 #include "logging/ovtf_log.h"
@@ -24,6 +27,9 @@
 #include "openvino_tensorflow/ovtf_builder.h"
 #include "openvino_tensorflow/ovtf_utils.h"
 #include "openvino_tensorflow/pass/transpose_sinking.h"
+
+
+using namespace std::chrono;
 
 using tensorflow::int32;
 using namespace std;
@@ -2965,6 +2971,49 @@ Status Builder::TranslateGraph(
     const std::vector<const Tensor*>& static_input_map,
     const Graph* input_graph, const string name,
     shared_ptr<ng::Function>& ng_function, ng::ResultVector& ng_result_list) {
+
+    auto convert_start = high_resolution_clock::now();
+
+#if 1
+    try {
+        std::vector<ngraph::PartialShape> input_shapes;
+        input_shapes.reserve(inputs.size());
+        for(size_t i = 0; i < inputs.size(); ++i)
+        {
+            ng::Shape ng_shape;
+            TF_RETURN_IF_ERROR(
+                    util::TFTensorShapeToNGraphShape(inputs[i], &ng_shape));
+            input_shapes.push_back(ng_shape);
+        }
+
+        std::cerr << "slyalin: here 1\n";
+        auto gd = std::make_shared<::tensorflow::GraphDef>();
+        std::cerr << "slyalin: here 2\n";
+        ngraph::frontend::FrontEndTensorflow frontend;
+
+        std::cerr << "slyalin: here 3\n";
+        auto start = high_resolution_clock::now();
+        input_graph->ToGraphDef(gd.get());
+        auto stop = high_resolution_clock::now();
+        auto duration = duration_cast<milliseconds>(stop - start);
+        cout << "ToGraphDef took: " << duration.count() << " ms" << endl;
+        std::cerr << "slyalin: here 4\n";
+        auto inputModelTensorflow = std::make_shared<ngraph::frontend::InputModelTensorflow>(gd, input_shapes);
+        std::cerr << "slyalin: here 5\n";
+        ng_function = frontend.convert(inputModelTensorflow);
+        std::cerr << "slyalin: here 6\n";
+        std::cerr << "ng_function->get_results().size()" << ng_function->get_results().size() << "\n";
+        // TODO: Extend ngraph::op::Result with index and use it instead of 0
+        ng_result_list.resize(1);
+        ng_result_list[0] = ng_function->get_results()[0];
+    }
+    catch(...)
+    {
+        std::cerr << "Excpetion thrown when converting TF graph def with frontend\n";
+    }
+
+#else
+
   //
   // We will visit ops in topological order.
   //
@@ -3142,13 +3191,23 @@ Status Builder::TranslateGraph(
     passes.run_passes(ng_function);
   }
   OVTF_VLOG(5) << "Done with passes";
+#endif
+
   //
   // Request row-major layout on results.
   //
   for (auto result : ng_function->get_results()) {
-    result->set_needs_default_layout(true);
+      result->set_needs_default_layout(true);
   }
+
+
+    std::cerr << "ng_function->get_results().size() = " << ng_function->get_results().size() << "\n";
+
   OVTF_VLOG(5) << "Done with translations";
+    auto convert_stop = high_resolution_clock::now();
+    auto duration = duration_cast<milliseconds>(convert_stop - convert_start);
+    std::cerr << "Entire conversion took: " << duration.count() << " ms\n";
+
   return Status::OK();
 }
 

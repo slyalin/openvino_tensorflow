@@ -150,6 +150,7 @@ if __name__ == "__main__":
     for backend in backends_list:
         print(backend)
     ovtf.set_backend(backend_name)
+    #ovtf.set_backend("")
 
     # Initialize session and run
     config = tf.compat.v1.ConfigProto()
@@ -162,8 +163,12 @@ if __name__ == "__main__":
             input_std=input_std)
 
         # Warmup
+        start = time.time()
         results = sess.run(output_operation.outputs[0],
                            {input_operation.outputs[0]: t})
+        elapsed = time.time() - start
+
+        print('Warming time in ms: %f' % (elapsed * 1000))
 
         # Run
         start = time.time()
