@@ -17,7 +17,7 @@
 #include "ngraph/pass/manager.hpp"
 #include "ngraph/pass/pass_config.hpp"
 #include "ngraph/slice_plan.hpp"
-#include "ngraph/frontend/tensorflow/tensorflow_frontend/tensorflow.hpp"
+#include "ngraph/frontend/tensorflow_frontend/tensorflow.hpp"
 
 #include "api.h"
 #include "logging/ovtf_log.h"

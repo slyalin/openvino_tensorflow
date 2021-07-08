@@ -200,7 +200,7 @@ add_library(tensorflow_frontend_lib SHARED IMPORTED)
 set_target_properties(
     tensorflow_frontend_lib
     PROPERTIES IMPORTED_LOCATION
-    ${NGRAPH_INSTALL_DIR}/${LIB}/libtensorflow_frontend.so
+    ${NGRAPH_INSTALL_DIR}/${LIB}/libtensorflow_ngraph_frontend.so
 )
 
 add_library(frontend_manager_lib SHARED IMPORTED)

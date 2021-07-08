@@ -7,7 +7,7 @@ set(LIB_NAME openvino_tensorflow)
 include_directories(${TensorFlow_INCLUDE_DIR})
 include_directories(${TensorFlow_INCLUDE_DIR}/external/nsync/public)
 include_directories(${NGRAPH_INSTALL_DIR}/include)
-include_directories(${NGRAPH_INSTALL_DIR}/include/ngraph/frontend/generic)
+include_directories(${NGRAPH_INSTALL_DIR}/include/ngraph/frontend)
 include_directories(${ABSL_INCLUDE_DIR})
 
 # For some reason the following is needed for ABI compatibility with TF.
