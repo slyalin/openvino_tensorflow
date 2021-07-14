@@ -18,6 +18,7 @@
 #include "ngraph/pass/pass_config.hpp"
 #include "ngraph/slice_plan.hpp"
 #include "ngraph/frontend/tensorflow_frontend/tensorflow.hpp"
+#include "ngraph/frontend/tensorflow_frontend/extension.hpp"
 
 #include "api.h"
 #include "logging/ovtf_log.h"
@@ -2990,6 +2991,20 @@ Status Builder::TranslateGraph(
         auto gd = std::make_shared<::tensorflow::GraphDef>();
         std::cerr << "slyalin: here 2\n";
         ngraph::frontend::FrontEndTensorflow frontend;
+
+        frontend.add_extension(std::make_shared<ngraph::frontend::TFConversionExtension>("_Arg",
+            [](ngraph::frontend::tensorflow::detail::NodeContext node) -> ngraph::OutputVector
+                {
+                    auto ng_et = node.get_attribute<ngraph::element::Type>("T");
+                    auto overridden_shape = node.get_overridden_shapes().find(node.get_name());
+                    auto index = node.get_attribute<int>("index");
+                    auto shape = node.get_indexed_shapes().at(index);
+                    auto ng_shape = overridden_shape == node.get_overridden_shapes().end() ?
+                                    shape :
+                                    overridden_shape->second;
+                    return {ConstructNgNode<opset::Parameter>(node.get_name(), ng_et, ng_shape)};
+                }
+            ));
 
         std::cerr << "slyalin: here 3\n";
         auto start = high_resolution_clock::now();

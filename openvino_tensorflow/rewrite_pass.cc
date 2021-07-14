@@ -26,7 +26,8 @@
 #include "openvino_tensorflow/ovtf_utils.h"
 
 #if OV_TF_FRONTEND
-#include "ngraph/frontend/tensorflow/tensorflow_frontend/tensorflow.hpp"
+#include "ngraph/frontend/tensorflow_frontend/tensorflow.hpp"
+#include "ngraph/frontend/tensorflow_frontend/extension.hpp"
 #include "tensorflow/core/graph/algorithm.h"
 #include <ie_core.hpp>
 #else
@@ -130,6 +131,15 @@ class NGraphEncapsulationPass : public NGraphRewritePass {
       try {
           std::cerr << "slyalin: FE as OCM: started frontend phase\n";
           ngraph::frontend::FrontEndTensorflow frontend;
+
+          frontend.add_extension(std::make_shared<ngraph::frontend::TFConversionExtension>("NoOp",
+            [](ngraph::frontend::tensorflow::detail::NodeContext node) -> ngraph::OutputVector {
+                if(node.get_ng_input_size() == 0) {
+                    return ngraph::OutputVector{};
+                };
+                return ngraph::OutputVector{node.get_ng_input(0)};
+           }
+           ));
 
           auto start = high_resolution_clock::now();
 #if 1
